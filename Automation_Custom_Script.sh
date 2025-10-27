@@ -2,7 +2,10 @@
 set -eu
 
 # Location of the env file on the boot partition
-ENV_FILE="/boot/.env"
+ENV_FILE="/boot/env"
+
+# shellcheck disable=SC1090
+. "$ENV_FILE"
 
 log() {
     echo "[dietpi-custom] $*"
@@ -16,7 +19,7 @@ if ! id "pi" >/dev/null 2>&1; then
     
     # Set the same password as the global password (from AUTO_SETUP_GLOBAL_PASSWORD in dietpi.txt)
     # The password will be 'dietpi' by default unless changed in dietpi.txt
-    echo "pi:dietpi" | chpasswd
+    echo "pi:$PI_PASSWORD" | chpasswd
     
     # Add user to sudo group
     usermod -aG sudo pi
@@ -32,13 +35,25 @@ else
     usermod -aG sudo pi
 fi
 
+# Delete the 'dietpi' user if it exists
+if id "dietpi" >/dev/null 2>&1; then
+    log "Deleting 'dietpi' user..."
+    
+    # Kill any processes owned by dietpi user
+    pkill -u dietpi || true
+    
+    # Remove the user and their home directory
+    userdel -r dietpi 2>/dev/null || userdel dietpi 2>/dev/null || true
+    
+    log "User 'dietpi' has been deleted"
+else
+    log "User 'dietpi' does not exist, skipping deletion"
+fi
+
 if [ ! -f "$ENV_FILE" ]; then
     log "No .env found at $ENV_FILE; skipping Tailscale setup."
     exit 0
 fi
-
-# shellcheck disable=SC1090
-. "$ENV_FILE"
 
 if [ -z "${TAILSCALE_AUTHKEY:-}" ]; then
     log "TAILSCALE_AUTHKEY not set in $ENV_FILE; skipping Tailscale login."
