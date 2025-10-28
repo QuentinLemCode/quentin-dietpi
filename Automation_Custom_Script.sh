@@ -22,6 +22,21 @@ else
     if [ -n "${USER_NAME:-}" ] && [ -n "${USER_PASSWORD:-}" ]; then
         log "USER_NAME and USER_PASSWORD are set, proceeding with user management..."
         
+        # Ensure required locales are generated
+        log "Configuring system locales (fr_FR.UTF-8 and en_US.UTF-8)..."
+        
+        # Uncomment locales in /etc/locale.gen if they exist
+        if [ -f /etc/locale.gen ]; then
+            sed -i 's/^# *fr_FR.UTF-8 UTF-8/fr_FR.UTF-8 UTF-8/' /etc/locale.gen 2>/dev/null || true
+            sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen 2>/dev/null || true
+            
+            # Generate locales
+            locale-gen 2>/dev/null || true
+            log "Locales generated"
+        else
+            log "Warning: /etc/locale.gen not found, skipping locale generation"
+        fi
+        
         # Create user with sudo privileges
         log "Creating user '$USER_NAME' with sudo privileges..."
         if ! id "$USER_NAME" >/dev/null 2>&1; then
@@ -45,22 +60,32 @@ else
             usermod -aG sudo "$USER_NAME"
         fi
         
-        # Configure bash aliases for the user
-        log "Setting up bash aliases for user '$USER_NAME'..."
+        # Configure locale fallback and bash aliases for the user
+        log "Setting up locale fallback and bash aliases for user '$USER_NAME'..."
         USER_HOME="/home/$USER_NAME"
         if [ -f "$USER_HOME/.bashrc" ]; then
-            # Check if aliases section already exists
-            if ! grep -q "# Custom aliases added by DietPi automation" "$USER_HOME/.bashrc"; then
+            # Check if configuration section already exists
+            if ! grep -q "# Custom configuration added by DietPi automation" "$USER_HOME/.bashrc"; then
                 cat >> "$USER_HOME/.bashrc" << 'EOF'
 
-# Custom aliases added by DietPi automation
+# Custom configuration added by DietPi automation
+
+# Locale configuration with fallback
+# Check if the current locale is available, otherwise fall back to C.UTF-8
+if ! locale -a 2>/dev/null | grep -qi "^${LANG:-C}$" 2>/dev/null; then
+    # If the locale from SSH client is not available, use C.UTF-8 as fallback
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+fi
+
+# Aliases
 alias vi='vim'
 alias ll='ls -altr'
 alias docker='podman'
 EOF
-                log "Bash aliases added to $USER_HOME/.bashrc"
+                log "Locale fallback and aliases added to $USER_HOME/.bashrc"
             else
-                log "Bash aliases already present in $USER_HOME/.bashrc"
+                log "Configuration already present in $USER_HOME/.bashrc"
             fi
         else
             log "Warning: $USER_HOME/.bashrc not found"
