@@ -79,7 +79,8 @@ if ! locale -a 2>/dev/null | grep -qi "^${LANG:-C}$" 2>/dev/null; then
 fi
 
 # Aliases
-alias vi='vim'
+alias vi='nvim'
+alias vim='nvim'
 alias ll='ls -altr'
 alias docker='podman'
 EOF
