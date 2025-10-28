@@ -67,13 +67,13 @@ AUTO_SETUP_HEADLESS=1
 CONFIG_SERIAL_CONSOLE_ENABLE=0
 
 # Unmask (enable) systemd-logind service (including dbus), which is masked by default on DietPi
-AUTO_UNMASK_LOGIND=0
+AUTO_UNMASK_LOGIND=1
 
 # Install APT packages automatically after first run setup.
 # - Add as many APT package names as you wish, separated by space.
 # - They will be installed after dietpi-software options and before the script defined via AUTO_SETUP_CUSTOM_SCRIPT_EXEC (see below) is executed.
 # - E.g. the following (without the leading "#") will install the APT packages iotop, iptables and xz-utils:
-AUTO_SETUP_APT_INSTALLS=vim htop iotop iftop tmux curl git unzip bash-completion net-tools dnsutils jq ca-certificates ncdu podman podman-compose
+AUTO_SETUP_APT_INSTALLS=vim htop iotop iftop tmux curl git unzip bash-completion net-tools dnsutils jq ca-certificates ncdu podman podman-compose uidmap
 
 # Custom Script (pre-networking and pre-DietPi install)
 # - Allows you to automatically execute a custom script before network is up on first boot.
