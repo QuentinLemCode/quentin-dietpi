@@ -109,6 +109,31 @@ EOF
     fi
 fi
 
+# Podman configuration
+log "Configuring Podman cgroup manager..."
+CONTAINERS_CONF="/usr/share/containers/containers.conf"
+if [ -f "$CONTAINERS_CONF" ]; then
+    log "Updating cgroup_manager setting in $CONTAINERS_CONF..."
+    # Update cgroup_manager line if it exists, otherwise add it
+    if grep -q "^[[:space:]]*cgroup_manager[[:space:]]*=" "$CONTAINERS_CONF"; then
+        sed -i 's/^[[:space:]]*cgroup_manager[[:space:]]*=.*/cgroup_manager = "cgroupfs"/' "$CONTAINERS_CONF"
+        log "Updated existing cgroup_manager setting to 'cgroupfs'"
+    else
+        # Find the [engine] section and add the setting, or append at the end
+        if grep -q "^\[engine\]" "$CONTAINERS_CONF"; then
+            sed -i '/^\[engine\]/a cgroup_manager = "cgroupfs"' "$CONTAINERS_CONF"
+            log "Added cgroup_manager setting under [engine] section"
+        else
+            echo "" >> "$CONTAINERS_CONF"
+            echo "[engine]" >> "$CONTAINERS_CONF"
+            echo 'cgroup_manager = "cgroupfs"' >> "$CONTAINERS_CONF"
+            log "Added [engine] section with cgroup_manager setting"
+        fi
+    fi
+else
+    log "Warning: $CONTAINERS_CONF not found, skipping Podman configuration"
+fi
+
 # Tailscale setup
 # Load env file if not already loaded (in case it was missing earlier)
 if [ -f "$ENV_FILE" ] && [ -z "${TAILSCALE_AUTHKEY:-}" ]; then
